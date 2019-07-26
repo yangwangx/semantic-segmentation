@@ -43,45 +43,44 @@ import torch
 from utils.attr_dict import AttrDict
 
 
-__C = AttrDict()
-cfg = __C
-__C.EPOCH = 0
+cfg = AttrDict()
+cfg.EPOCH = 0
 # Use Class Uniform Sampling to give each class proper sampling
-__C.CLASS_UNIFORM_PCT = 0.0
+cfg.CLASS_UNIFORM_PCT = 0.0
 
 # Use class weighted loss per batch to increase loss for low pixel count classes per batch
-__C.BATCH_WEIGHTING = False
+cfg.BATCH_WEIGHTING = False
 
 # Border Relaxation Count
-__C.BORDER_WINDOW = 1
+cfg.BORDER_WINDOW = 1
 # Number of epoch to use before turn off border restriction
-__C.REDUCE_BORDER_EPOCH = -1
+cfg.REDUCE_BORDER_EPOCH = -1
 # Comma Seperated List of class id to relax
-__C.STRICTBORDERCLASS = None
+cfg.STRICTBORDERCLASS = None
 
 
 
-#Attribute Dictionary for Dataset
-__C.DATASET = AttrDict()
-#Cityscapes Dir Location
-__C.DATASET.CITYSCAPES_DIR = '/private/home/yangwangx/datasets/cityscapes'
-#SDC Augmented Cityscapes Dir Location
-__C.DATASET.CITYSCAPES_AUG_DIR = ''
-#Mapillary Dataset Dir Location
-__C.DATASET.MAPILLARY_DIR = ''
-#Kitti Dataset Dir Location
-__C.DATASET.KITTI_DIR = ''
-#SDC Augmented Kitti Dataset Dir Location
-__C.DATASET.KITTI_AUG_DIR = ''
-#Camvid Dataset Dir Location
-__C.DATASET.CAMVID_DIR = ''
-#Number of splits to support
-__C.DATASET.CV_SPLITS = 3
+# Attribute Dictionary for Dataset
+cfg.DATASET = AttrDict()
+# Cityscapes Dir Location
+cfg.DATASET.CITYSCAPES_DIR = '/private/home/yangwangx/datasets/cityscapes'
+# SDC Augmented Cityscapes Dir Location
+cfg.DATASET.CITYSCAPES_AUG_DIR = ''
+# Mapillary Dataset Dir Location
+cfg.DATASET.MAPILLARY_DIR = ''
+# Kitti Dataset Dir Location
+cfg.DATASET.KITTI_DIR = ''
+# SDC Augmented Kitti Dataset Dir Location
+cfg.DATASET.KITTI_AUG_DIR = ''
+# Camvid Dataset Dir Location
+cfg.DATASET.CAMVID_DIR = ''
+# Number of splits to support
+cfg.DATASET.CV_SPLITS = 3
 
-
-__C.MODEL = AttrDict()
-__C.MODEL.BN = 'regularnorm'
-__C.MODEL.BNFUNC = None
+# Attribute Dictionary for Model
+cfg.MODEL = AttrDict()
+cfg.MODEL.BN = 'regularnorm'
+cfg.MODEL.BNFUNC = None
 
 def assert_and_infer_cfg(args, make_immutable=True, train_mode=True):
     """Call this function in your script after you have finished setting all cfg
@@ -95,12 +94,12 @@ def assert_and_infer_cfg(args, make_immutable=True, train_mode=True):
     if hasattr(args, 'syncbn') and args.syncbn:
         if args.apex:
             import apex
-            __C.MODEL.BN = 'apex-syncnorm'
-            __C.MODEL.BNFUNC = apex.parallel.SyncBatchNorm
+            cfg.MODEL.BN = 'apex-syncnorm'
+            cfg.MODEL.BNFUNC = apex.parallel.SyncBatchNorm
         else:
             raise Exception('No Support for SyncBN without Apex')
     else:
-        __C.MODEL.BNFUNC = torch.nn.BatchNorm2d
+        cfg.MODEL.BNFUNC = torch.nn.BatchNorm2d
         print('Using regular batch norm')
 
     if not train_mode:
@@ -110,13 +109,13 @@ def assert_and_infer_cfg(args, make_immutable=True, train_mode=True):
         cfg.CLASS_UNIFORM_PCT = args.class_uniform_pct
 
     if args.batch_weighting:
-        __C.BATCH_WEIGHTING = True
+        cfg.BATCH_WEIGHTING = True
 
     if args.jointwtborder:
         if args.strict_bdr_cls != '':
-            __C.STRICTBORDERCLASS = [int(i) for i in args.strict_bdr_cls.split(",")]
+            cfg.STRICTBORDERCLASS = [int(i) for i in args.strict_bdr_cls.split(",")]
         if args.rlx_off_epoch > -1:
-            __C.REDUCE_BORDER_EPOCH = args.rlx_off_epoch
+            cfg.REDUCE_BORDER_EPOCH = args.rlx_off_epoch
 
     if make_immutable:
         cfg.immutable(True)
