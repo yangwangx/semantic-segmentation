@@ -30,7 +30,7 @@ from network import SEresnext
 from network import Resnet
 from network.wider_resnet import wider_resnet38_a2
 from network.mynn import initialize_weights, Norm2d, Upsample
-
+from yw_svx import naive_spix_gather_smear
 
 class _AtrousSpatialPyramidPoolingModule(nn.Module):
     """
@@ -260,10 +260,12 @@ class DeepWV3Plus(nn.Module):
 
         initialize_weights(self.final)
 
-    def forward(self, inp, gts=None):
+    def forward(self, x, gts=None, spIndex=None, smear_layer=''):
+        if smear_layer != '':
+            return self.forward_with_smear(x, spIndex, smear_layer)
 
-        x_size = inp.size()
-        x = self.mod1(inp)
+        x_size = x.size()
+        x = self.mod1(x)
         m2 = self.mod2(self.pool2(x))
         x = self.mod3(self.pool3(m2))
         x = self.mod4(x)
@@ -286,6 +288,36 @@ class DeepWV3Plus(nn.Module):
 
         return out
 
+    def forward_with_smear(self, x, spIndex, smear_layer):
+        x_size = x.size()
+        x = self.mod1(x)
+        if smear_layer == 'mod1': x = naive_spix_gather_smear(x, spIndex)
+        m2 = self.mod2(self.pool2(x))
+        if smear_layer == 'mod2': m2 = naive_spix_gather_smear(m2, spIndex)
+        x = self.mod3(self.pool3(m2))
+        if smear_layer == 'mod3': x = naive_spix_gather_smear(x, spIndex)
+        x = self.mod4(x)
+        if smear_layer == 'mod4': x = naive_spix_gather_smear(x, spIndex)
+        x = self.mod5(x)
+        if smear_layer == 'mod5': x = naive_spix_gather_smear(x, spIndex)
+        x = self.mod6(x)
+        if smear_layer == 'mod6': x = naive_spix_gather_smear(x, spIndex)
+        x = self.mod7(x)
+        if smear_layer == 'mod7': x = naive_spix_gather_smear(x, spIndex)
+        x = self.aspp(x)
+        if smear_layer == 'aspp': x = naive_spix_gather_smear(x, spIndex)
+        dec0_up = self.bot_aspp(x)
+
+        dec0_fine = self.bot_fine(m2)
+        dec0_up = Upsample(dec0_up, m2.size()[2:])
+        dec0 = [dec0_fine, dec0_up]
+        dec0 = torch.cat(dec0, 1)
+
+        dec1 = self.final(dec0)
+        if smear_layer == 'final': dec1 = naive_spix_gather_smear(dec1, spIndex)
+        out = Upsample(dec1, x_size[2:])
+        if smear_layer == 'out': out = naive_spix_gather_smear(out, spIndex)
+        return out
 
 def DeepSRNX50V3PlusD_m1(num_classes, criterion):
     """
