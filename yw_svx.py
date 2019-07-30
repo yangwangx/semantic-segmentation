@@ -34,24 +34,50 @@ def run_ssn_cityscape_model_on_lab(ssn, imgs_lab, num_spixel):
         _config = ssn.module.configure if hasattr(ssn, 'module') else ssn.configure
         H, W, Kh, Kw, K = _config(imgs_lab.shape, num_spixel, p_scale=0.4, lab_scale=0.26, softscale=-1.0, num_steps=10)
         init_spIndx = svx.get_init_spIndx2d(imgs_lab.shape, n_sv=num_spixel).to(imgs_lab.device)
-        _, _, _, final_spIndx = ssn(imgs_lab, init_spIndx)
-    return final_spIndx
+        _, _, final_assoc, final_spIndx = ssn(imgs_lab, init_spIndx)
+    return init_spIndx, final_assoc, final_spIndx
 
 def run_ssn_cityscape_model_on_rgb(ssn, imgs_rgb, num_spixel):
     with torch.no_grad():
         # convert rgb to lab format
         imgs_lab = convert_01_tensor_rgb2lab(imgs_rgb)
-        return run_ssn_cityscape_model_on_rgb(ssn, imgs_lab, num_spixel)
+        return run_ssn_cityscape_model_on_lab(ssn, imgs_lab, num_spixel)
 
-def naive_spix_gather_smear(pFeat, spIndx):
+def hard_spix_gather_smear(pFeat, final_spIndx):
     with torch.no_grad():
-        _, _, H1, W1 = spIndx.shape
+        _, _, H1, W1 = final_spIndx.shape
         _, _, H2, W2 = pFeat.shape
-        K = int(spIndx.max().item()) + 1 # assume spIndx [0, K)
+        K = int(final_spIndx.max().item()) + 1 # assume final_spIndx [0, K)
         if H1 == H2 and W1 == W2:
-            pFeat = svx.spFeatSmear2d(svx.spFeatGather2d(pFeat, spIndx, K)[0], spIndx)
+            spFeat, _ = svx.spFeatGather2d(pFeat, final_spIndx, K)
+            pFeat = svx.spFeatSmear2d(spFeat, final_spIndx)
         else:
             pFeat = Upsample(pFeat, size=(H1, W1))  # upsample by interp
-            pFeat = svx.spFeatSmear2d(svx.spFeatGather2d(pFeat, spIndx, K)[0], spIndx)
+            spFeat, _ = svx.spFeatGather2d(pFeat, final_spIndx, K)
+            pFeat = svx.spFeatSmear2d(spFeat, final_spIndx)
             pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
         return pFeat
+
+def soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc):
+    with torch.no_grad():
+        _, _, H1, W1 = init_spIndx.shape        
+        _, _, H2, W2 = pFeat.shape
+        K = int(init_spIndx.max().item()) + 1 # assume init_spIndx [0, K)
+        Kh, Kw = svx.get_spixel_init_size(K, H1, W2)
+        if H1 == H2 and W1 == W2:
+            spFeat, _ = svx.spFeatUpdate2d(pFeat, psp_assoc, init_spIndx, Kh, Kw)
+            pFeat = svx.spFeatSoftSmear2d(spFeat, psp_assoc, init_spIndx, Kh, Kw)
+        else:
+            pFeat = Upsample(pFeat, size=(H1, W1))  # upsample by interp
+            spFeat, _ = svx.spFeatUpdate2d(pFeat, psp_assoc, init_spIndx, Kh, Kw)
+            pFeat = svx.spFeatSoftSmear2d(spFeat, psp_assoc, init_spIndx, Kh, Kw)
+            pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
+        return pFeat
+
+def spix_pool(pFeat, init_spIndx, psp_assoc, final_spIndx, mode):
+    if mode == 'hard':
+        return hard_spix_gather_smear(pFeat, final_spIndx)
+    elif mode == 'soft':
+        return soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc)
+    else:
+        raise NotImplementedError

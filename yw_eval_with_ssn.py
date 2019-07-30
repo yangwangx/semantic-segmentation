@@ -44,8 +44,9 @@ sys.path.append(os.path.join(os.getcwd(), '../'))
 
 parser = argparse.ArgumentParser(description='evaluation')
 # added by yang wang
-parser.add_argument('--crop_spixel', type=int, default=400)
+parser.add_argument('--crop_spixel', type=int, default=500)
 parser.add_argument('--smear_layer', type=str, default='out')
+parser.add_argument('--smear_mode', type=str, default='hard')
 # old options
 parser.add_argument('--dump_images', action='store_true', default=False)
 parser.add_argument('--arch', type=str, default='', required=True)
@@ -318,9 +319,13 @@ def inference_sliding(model, img, scales):
 
         with torch.no_grad():
             # run ssn first
-            spIndex = run_ssn_cityscape_model_on_lab(ssn_model, lab_crops, args.crop_spixel)
+            init_spIndx, final_assoc, final_spIndx = \
+                run_ssn_cityscape_model_on_lab(ssn_model, lab_crops, args.crop_spixel)
             # run deepv3 then
-            output_scattered = model(input_crops, spIndex=spIndex, smear_layer=args.smear_layer)
+            output_scattered = model(input_crops, 
+                smear_layer=args.smear_layer, smear_mode=args.smear_mode,
+                init_spIndx=init_spIndx, final_spIndx=final_spIndx, psp_assoc=final_assoc)
+
 
         output_scattered = output_scattered.data.cpu().numpy()
 
