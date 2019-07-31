@@ -462,7 +462,7 @@ class RunEval():
         ######################################################################
         # Dump Images
         ######################################################################
-        if self.write_image:
+        if '000076' in self.img_name or self.write_image:
 
             if self.inference_mode == 'pooling':
                 img = pool_base_img

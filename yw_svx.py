@@ -60,7 +60,7 @@ def hard_spix_gather_smear(pFeat, final_spIndx):
 
 def soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc):
     with torch.no_grad():
-        _, _, H1, W1 = init_spIndx.shape        
+        _, _, H1, W1 = init_spIndx.shape
         _, _, H2, W2 = pFeat.shape
         K = int(init_spIndx.max().item()) + 1 # assume init_spIndx [0, K)
         Kh, Kw = svx.get_spixel_init_size(K, H1, W2)
@@ -74,10 +74,41 @@ def soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc):
             pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
         return pFeat
 
+def none_spix_gather_smear(pFeat, init_spIndx):
+    with torch.no_grad():
+        _, _, H1, W1 = init_spIndx.shape
+        _, _, H2, W2 = pFeat.shape
+        if H1 == H2 and W1 == W2:
+            pass
+        else:
+            pFeat = Upsample(pFeat, size=(H1, W1))  # upsample by interp
+            pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
+        return pFeat
+
+def max_spix_gather_smear(pFeat, init_spIndx, psp_assoc):
+    with torch.no_grad():
+        _, _, H1, W1 = init_spIndx.shape
+        _, _, H2, W2 = pFeat.shape
+        K = int(init_spIndx.max().item()) + 1 # assume init_spIndx [0, K)
+        Kh, Kw = svx.get_spixel_init_size(K, H1, W2)
+        if H1 == H2 and W1 == W2:
+            spFeat, _ = svx.spFeatUpdate2d(pFeat, psp_assoc, init_spIndx, Kh, Kw)
+            pFeat = torch.max(pFeat, svx.spFeatSoftSmear2d(spFeat, psp_assoc, init_spIndx, Kh, Kw))
+        else:
+            pFeat = Upsample(pFeat, size=(H1, W1))  # upsample by interp
+            spFeat, _ = svx.spFeatUpdate2d(pFeat, psp_assoc, init_spIndx, Kh, Kw)
+            pFeat = torch.max(pFeat, svx.spFeatSoftSmear2d(spFeat, psp_assoc, init_spIndx, Kh, Kw))
+            pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
+        return pFeat
+
 def spix_pool(pFeat, init_spIndx, psp_assoc, final_spIndx, mode):
     if mode == 'hard':
         return hard_spix_gather_smear(pFeat, final_spIndx)
     elif mode == 'soft':
         return soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc)
+    elif mode == 'none':
+        return none_spix_gather_smear(pFeat, init_spIndx)
+    elif mode == 'max':
+        return max_spix_gather_smear(pFeat, init_spIndx, psp_assoc)
     else:
         raise NotImplementedError
