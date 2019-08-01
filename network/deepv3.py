@@ -260,9 +260,9 @@ class DeepWV3Plus(nn.Module):
 
         initialize_weights(self.final)
 
-    def forward(self, x, gts=None, smear_layer='', smear_mode='hard', init_spIndx=None, final_spIndx=None, psp_assoc=None):
+    def forward(self, x, gts=None, smear_layer='', smear_mode='hard', init_spIndx=None, final_spIndx=None, psp_assoc=None, spShape=None):
         if smear_layer != '':
-            return self.forward_with_smear(x, smear_layer, smear_mode, init_spIndx, final_spIndx, psp_assoc)
+            return self.forward_with_smear(x, smear_layer, smear_mode, init_spIndx, final_spIndx, psp_assoc, spShape)
 
         x_size = x.size()
         x = self.mod1(x)
@@ -288,9 +288,10 @@ class DeepWV3Plus(nn.Module):
 
         return out
 
-    def forward_with_smear(self, x, smear_layer, smear_mode, init_spIndx, final_spIndx, psp_assoc):
-        _spix_pool_ = lambda x: spix_pool(x, init_spIndx, psp_assoc, final_spIndx, smear_mode)
+    def forward_with_smear(self, x, smear_layer, smear_mode, init_spIndx, final_spIndx, psp_assoc, spShape):
+        _spix_pool_ = lambda xx: spix_pool(xx, init_spIndx, psp_assoc, final_spIndx, smear_mode, spShape)
         x_size = x.size()
+        if smear_layer == 'input': x = _spix_pool_(x)
         x = self.mod1(x)
         if smear_layer == 'mod1': x = _spix_pool_(x)
         m2 = self.mod2(self.pool2(x))

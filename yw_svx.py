@@ -35,7 +35,7 @@ def run_ssn_cityscape_model_on_lab(ssn, imgs_lab, num_spixel):
         H, W, Kh, Kw, K = _config(imgs_lab.shape, num_spixel, p_scale=0.4, lab_scale=0.26, softscale=-1.0, num_steps=10)
         init_spIndx = svx.get_init_spIndx2d(imgs_lab.shape, n_sv=num_spixel).to(imgs_lab.device)
         _, _, final_assoc, final_spIndx = ssn(imgs_lab, init_spIndx)
-    return init_spIndx, final_assoc, final_spIndx
+    return init_spIndx, final_assoc, final_spIndx, (Kh, Kw)
 
 def run_ssn_cityscape_model_on_rgb(ssn, imgs_rgb, num_spixel):
     with torch.no_grad():
@@ -43,11 +43,11 @@ def run_ssn_cityscape_model_on_rgb(ssn, imgs_rgb, num_spixel):
         imgs_lab = convert_01_tensor_rgb2lab(imgs_rgb)
         return run_ssn_cityscape_model_on_lab(ssn, imgs_lab, num_spixel)
 
-def hard_spix_gather_smear(pFeat, final_spIndx):
+def hard_spix_gather_smear(pFeat, final_spIndx, spShape):
     with torch.no_grad():
         _, _, H1, W1 = final_spIndx.shape
         _, _, H2, W2 = pFeat.shape
-        K = int(final_spIndx.max().item()) + 1 # assume final_spIndx [0, K)
+        K = final_spIndx.max().item() + 1
         if H1 == H2 and W1 == W2:
             spFeat, _ = svx.spFeatGather2d(pFeat, final_spIndx, K)
             pFeat = svx.spFeatSmear2d(spFeat, final_spIndx)
@@ -58,12 +58,28 @@ def hard_spix_gather_smear(pFeat, final_spIndx):
             pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
         return pFeat
 
-def soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc):
+def downsoft_spix_gather_smear(pFeat, init_spIndx, psp_assoc, spShape):
     with torch.no_grad():
         _, _, H1, W1 = init_spIndx.shape
         _, _, H2, W2 = pFeat.shape
-        K = int(init_spIndx.max().item()) + 1 # assume init_spIndx [0, K)
-        Kh, Kw = svx.get_spixel_init_size(K, H1, W2)
+        Kh, Kw = spShape
+        K = Kh * Kw
+        if H1 == H2 and W1 == W2:
+            spFeat, _ = svx.spFeatUpdate2d(pFeat, psp_assoc, init_spIndx, Kh, Kw)
+            pFeat = svx.spFeatSoftSmear2d(spFeat, psp_assoc, init_spIndx, Kh, Kw)
+        else:
+            init_spIndx = Upsample(init_spIndx, size=(H2, W2), mode='nearest')  # downsample by interp
+            psp_assoc = Upsample(psp_assoc, size=(H2, W2), mode='nearest')  # downsample by interp
+            spFeat, _ = svx.spFeatUpdate2d(pFeat, psp_assoc, init_spIndx, Kh, Kw)
+            pFeat = svx.spFeatSoftSmear2d(spFeat, psp_assoc, init_spIndx, Kh, Kw)
+        return pFeat
+
+def soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc, spShape):
+    with torch.no_grad():
+        _, _, H1, W1 = init_spIndx.shape
+        _, _, H2, W2 = pFeat.shape
+        Kh, Kw = spShape
+        K = Kh * Kw
         if H1 == H2 and W1 == W2:
             spFeat, _ = svx.spFeatUpdate2d(pFeat, psp_assoc, init_spIndx, Kh, Kw)
             pFeat = svx.spFeatSoftSmear2d(spFeat, psp_assoc, init_spIndx, Kh, Kw)
@@ -74,7 +90,7 @@ def soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc):
             pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
         return pFeat
 
-def none_spix_gather_smear(pFeat, init_spIndx):
+def none_spix_gather_smear(pFeat, init_spIndx, spShape):
     with torch.no_grad():
         _, _, H1, W1 = init_spIndx.shape
         _, _, H2, W2 = pFeat.shape
@@ -85,12 +101,12 @@ def none_spix_gather_smear(pFeat, init_spIndx):
             pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
         return pFeat
 
-def max_spix_gather_smear(pFeat, init_spIndx, psp_assoc):
+def softmax_spix_gather_smear(pFeat, init_spIndx, psp_assoc, spShape):
     with torch.no_grad():
         _, _, H1, W1 = init_spIndx.shape
         _, _, H2, W2 = pFeat.shape
-        K = int(init_spIndx.max().item()) + 1 # assume init_spIndx [0, K)
-        Kh, Kw = svx.get_spixel_init_size(K, H1, W2)
+        Kh, Kw = spShape
+        K = Kh * Kw
         if H1 == H2 and W1 == W2:
             spFeat, _ = svx.spFeatUpdate2d(pFeat, psp_assoc, init_spIndx, Kh, Kw)
             pFeat = torch.max(pFeat, svx.spFeatSoftSmear2d(spFeat, psp_assoc, init_spIndx, Kh, Kw))
@@ -101,14 +117,33 @@ def max_spix_gather_smear(pFeat, init_spIndx, psp_assoc):
             pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
         return pFeat
 
-def spix_pool(pFeat, init_spIndx, psp_assoc, final_spIndx, mode):
+def hardmax_spix_gather_smear(pFeat, final_spIndx, spShape):
+    with torch.no_grad():
+        _, _, H1, W1 = final_spIndx.shape
+        _, _, H2, W2 = pFeat.shape
+        K = final_spIndx.max().item() + 1
+        if H1 == H2 and W1 == W2:
+            spFeat, _ = svx.spFeatGather2d(pFeat, final_spIndx, K)
+            pFeat = torch.max(pFeat, svx.spFeatSmear2d(spFeat, final_spIndx))
+        else:
+            pFeat = Upsample(pFeat, size=(H1, W1))  # upsample by interp
+            spFeat, _ = svx.spFeatGather2d(pFeat, final_spIndx, K)
+            pFeat = torch.max(pFeat, svx.spFeatSmear2d(spFeat, final_spIndx))
+            pFeat = Upsample(pFeat, size=(H2, W2))  # downsample by interp
+        return pFeat
+
+def spix_pool(pFeat, init_spIndx, psp_assoc, final_spIndx, mode, spShape):
     if mode == 'hard':
-        return hard_spix_gather_smear(pFeat, final_spIndx)
+        return hard_spix_gather_smear(pFeat, final_spIndx, spShape)
     elif mode == 'soft':
-        return soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc)
+        return soft_spix_gather_smear(pFeat, init_spIndx, psp_assoc, spShape)
+    elif mode == 'downsoft':
+        return downsoft_spix_gather_smear(pFeat, init_spIndx, psp_assoc, spShape)
     elif mode == 'none':
-        return none_spix_gather_smear(pFeat, init_spIndx)
-    elif mode == 'max':
-        return max_spix_gather_smear(pFeat, init_spIndx, psp_assoc)
+        return none_spix_gather_smear(pFeat, init_spIndx, spShape)
+    elif mode == 'softmax':
+        return softmax_spix_gather_smear(pFeat, init_spIndx, psp_assoc, spShape)
+    elif mode == 'hardmax':
+        return hardmax_spix_gather_smear(pFeat, final_spIndx, spShape)
     else:
         raise NotImplementedError

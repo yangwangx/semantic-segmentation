@@ -319,12 +319,12 @@ def inference_sliding(model, img, scales):
 
         with torch.no_grad():
             # run ssn first
-            init_spIndx, final_assoc, final_spIndx = \
+            init_spIndx, final_assoc, final_spIndx, spShape = \
                 run_ssn_cityscape_model_on_lab(ssn_model, lab_crops, args.crop_spixel)
             # run deepv3 then
             output_scattered = model(input_crops, 
                 smear_layer=args.smear_layer, smear_mode=args.smear_mode,
-                init_spIndx=init_spIndx, final_spIndx=final_spIndx, psp_assoc=final_assoc)
+                init_spIndx=init_spIndx, final_spIndx=final_spIndx, psp_assoc=final_assoc, spShape=spShape)
 
 
         output_scattered = output_scattered.data.cpu().numpy()

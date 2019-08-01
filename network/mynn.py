@@ -31,9 +31,13 @@ def initialize_weights(*models):
 
 
 @amp.float_function
-def Upsample(x, size):
+def Upsample(x, size, mode='bilinear'):
     """
     Wrapper Around the Upsample Call
     """
-    return nn.functional.interpolate(x, size=size, mode='bilinear',
-                                     align_corners=True)
+    if mode == 'nearest':
+        align_corners=None
+    else:
+        align_corners=True
+    return nn.functional.interpolate(x, size=size, mode=mode,
+                                     align_corners=align_corners)
