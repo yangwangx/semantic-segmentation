@@ -1,4 +1,5 @@
 ckpt
+logs
 setenv
 weights
 *~
@@ -18,3 +19,4 @@ dist/
 .DS_Store
 *results*
 pretrained_models
+zz*

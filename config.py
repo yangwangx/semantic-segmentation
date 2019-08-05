@@ -65,7 +65,7 @@ cfg.DATASET = AttrDict()
 # Cityscapes Dir Location
 cfg.DATASET.CITYSCAPES_DIR = '/private/home/yangwangx/datasets/cityscapes'
 # SDC Augmented Cityscapes Dir Location
-cfg.DATASET.CITYSCAPES_AUG_DIR = ''
+cfg.DATASET.CITYSCAPES_AUG_DIR = '/private/home/yangwangx/datasets/cityscapes/cs_aug'
 # Mapillary Dataset Dir Location
 cfg.DATASET.MAPILLARY_DIR = ''
 # Kitti Dataset Dir Location
