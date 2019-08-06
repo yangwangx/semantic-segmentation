@@ -13,5 +13,5 @@ PYTHONPATH=$PWD:$PYTHONPATH python3 yw_eval_with_ssn.py \
     --smear_layer out \
     --smear_mode downsoft \
     --crop_spixel 4096 \
-    --ckpt_path yw_results/split2/out_downsoft_4096 \
+    --ckpt_path yw_results/split2_evalSSN/out_downsoft_4096 \
 #    --dump_images

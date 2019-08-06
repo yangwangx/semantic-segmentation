@@ -13,12 +13,12 @@ sys.path.insert(0, svx_root)
 import lib as svx
 
 def get_ssn_pix_model():
-    ssn = svx.SSN(use_cnn=False)
+    ssn = svx.SSN(use_cnn=False).eval()
     return ssn
 
 def get_ssn_cityscape_model():
     pretrained_npz = os.path.join(svx_root, 'ssn_pretrained/ssn_cityscapes_model.caffemodel.npz')
-    ssn = svx.SSN(use_cnn=True, num_in=5, num_out=15, num_ch=64, pretrained_npz=pretrained_npz)
+    ssn = svx.SSN(use_cnn=True, num_in=5, num_out=15, num_ch=64, pretrained_npz=pretrained_npz).eval()
     return ssn
 
 def convert_01_tensor_rgb2lab(imgs):
@@ -31,6 +31,7 @@ def convert_01_tensor_rgb2lab(imgs):
 
 def run_ssn_cityscape_model_on_lab(ssn, imgs_lab, num_spixel):
     with torch.no_grad():
+        ssn.eval()
         _config = ssn.module.configure if hasattr(ssn, 'module') else ssn.configure
         H, W, Kh, Kw, K = _config(imgs_lab.shape, num_spixel, p_scale=0.4, lab_scale=0.26, softscale=-1.0, num_steps=10)
         init_spIndx = svx.get_init_spIndx2d(imgs_lab.shape, n_sv=num_spixel).to(imgs_lab.device)

@@ -9,7 +9,7 @@
         --class_uniform_pct 0.5 \
         --class_uniform_tile 1024 \
         --maxSkip 3 \
-        --max_cu_epoch 40 \
+        --max_cu_epoch 0 \
         --lr 0.001 \
         --lr_schedule scl-poly \
         --poly_exp 1.0 \
@@ -22,14 +22,14 @@
         --scale_max 2.0 \
         --color_aug 0.25 \
         --gblur \
-        --max_epoch 60 \
+        --max_epoch 50 \
         --coarse_boost_classes 14,6,15,16,3,12,17,4 \
         --jointwtborder \
         --strict_bdr_cls 5,6,7,11,12,17,18 \
-        --rlx_off_epoch 40 \
+        --rlx_off_epoch 0 \
         --wt_bound 1.0 \
         --bs_mult 2 \
         --apex \
-        --exp cv2_skip3_wt1_relax_epoch60_run \
+        --exp cv2_skip3_wt1_relax_epoch50_run \
         --ckpt ./logs/ \
-        --tb_path ./logs/
+        --tb_path ./logs/ \
