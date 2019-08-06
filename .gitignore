@@ -20,3 +20,4 @@ dist/
 *results*
 pretrained_models
 zz*
+*.json

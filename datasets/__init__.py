@@ -64,7 +64,7 @@ def setup_loaders(args):
         args.val_batch_size = args.bs_mult_val
 
     
-    args.num_workers = 4 * args.ngpu
+    args.num_workers = 2 * args.ngpu
     if args.test_mode:
         args.num_workers = 1
 
