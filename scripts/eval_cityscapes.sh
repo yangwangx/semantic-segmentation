@@ -10,5 +10,5 @@ PYTHONPATH=$PWD:$PYTHONPATH python3 eval.py \
     --crop_size 512 \
     --snapshot pretrained_models/cityscapes_best.pth \
     --no_flip \
-    --ckpt_path results/split2_noflip
-    --dump_images
+    --ckpt_path results/split2_noflip \
+    # --dump_images
