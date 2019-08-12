@@ -176,12 +176,6 @@ def main():
         cfg.EPOCH = epoch
         cfg.immutable(True)
 
-        scheduler.step()
-        train(train_loader, net, optim, epoch, writer)
-        if args.apex:
-            train_loader.sampler.set_epoch(epoch + 1)
-        validate(val_loader, net, criterion_val,
-                 optim, epoch, writer)
         if args.class_uniform_pct:
             if epoch >= args.max_cu_epoch:
                 train_obj.build_epoch(cut=True)
@@ -190,6 +184,11 @@ def main():
             else:
                 train_obj.build_epoch()
 
+        scheduler.step()
+        train(train_loader, net, optim, epoch, writer)
+        if args.apex:
+            train_loader.sampler.set_epoch(epoch + 1)
+        validate(val_loader, net, criterion_val, optim, epoch, writer)
 
 def train(train_loader, net, optim, curr_epoch, writer):
     """
