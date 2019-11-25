@@ -1,0 +1,87 @@
+.
+├── cityscapes_coarse_train_tile1024.json
+├── cityscapes_train_cv2_tile1024.json
+├── cityscapes_train_cv2_tile1024_skip3.json
+├── config.py
+├── datasets
+│   ├── camvid.py
+│   ├── cityscapes_labels.py
+│   ├── cityscapes.py
+│   ├── __init__.py
+│   ├── kitti.py
+│   ├── mapillary.py
+│   ├── nullloader.py
+│   ├── __pycache__
+│   ├── sampler.py
+│   └── uniform.py
+├── Dockerfile
+├── eval.py
+├── folder_structure.txt
+├── images
+│   ├── method.png
+│   └── vis.png
+├── LICENSE
+├── logs
+│   └── cv2_skip3_wt1_relax_epoch50_run
+├── loss.py
+├── network
+│   ├── deepv3.py
+│   ├── __init__.py
+│   ├── mynn.py
+│   ├── __pycache__
+│   ├── Resnet.py
+│   ├── SEresnext.py
+│   └── wider_resnet.py
+├── optimizer.py
+├── PREPARE_DATASETS.md
+├── pretrained_models
+│   ├── cityscapes_best_crop512.pth
+│   ├── cityscapes_best.pth
+│   ├── FlowNet2_checkpoint.pth.tar
+│   └── sdc_cityscapes_vrec.pth.tar
+├── __pycache__
+│   ├── config.cpython-36.pyc
+│   ├── loss.cpython-36.pyc
+│   ├── optimizer.cpython-36.pyc
+│   ├── svx.cpython-36.pyc
+│   └── yw_svx.cpython-36.pyc
+├── README.md
+├── results
+│   ├── split2
+│   └── split2_noflip
+├── scripts
+│   ├── eval_cityscapes.sh
+│   ├── request_slurm.sh
+│   ├── submit_cityscapes.sh
+│   ├── train_cityscapes.sh
+│   ├── train_mapillary.sh
+│   ├── yw_eval_cityscapes.sh
+│   └── yw_train_cityscapes.sh
+├── sdcnet
+│   ├── _aug.sh
+│   ├── datasets
+│   ├── _eval.sh
+│   ├── flownet2_pytorch
+│   ├── main.py
+│   ├── models
+│   ├── sdc_aug.py
+│   └── utility
+├── train.py
+├── transforms
+│   ├── __init__.py
+│   ├── joint_transforms.py
+│   ├── __pycache__
+│   └── transforms.py
+├── utils
+│   ├── attr_dict.py
+│   ├── __init__.py
+│   ├── misc.py
+│   ├── my_data_parallel.py
+│   └── __pycache__
+├── yw_eval_with_ssn.py
+├── yw_results
+│   ├── split2
+│   └── split2_evalSSN
+└── yw_svx.py
+
+25 directories, 59 files
